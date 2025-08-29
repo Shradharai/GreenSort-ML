@@ -1,124 +1,165 @@
-# GreenSort ML: Smart Waste Classification System
+# GreenSortML: Machine Learning-Based Energy-Aware GPU Sorting Framework
 
-**GreenSort ML** is a machine learning project aimed at automating waste sorting. The system classifies waste items (like plastic, paper, organic, etc.) into appropriate categories using image and/or text data, helping reduce human effort and improve recycling efficiency.
+**Authors:**
 
-## Table of Contents
+* Kenisha Surana ([ks6295@srmist.edu.in](mailto:ks6295@srmist.edu.in))
+* Akshita Sahu ([as3532@srmist.edu.in](mailto:as3532@srmist.edu.in))
+* Shradha Rai ([sr1008@srmist.edu.in](mailto:sr1008@srmist.edu.in))
+* Varenya Bhimaraju ([vb6341@srmist.edu.in](mailto:vb6341@srmist.edu.in))
 
-* [Overview](#overview)
-* [Features](#features)
-* [Technologies](#technologies)
-* [Installation](#installation)
-* [Usage](#usage)
-* [Dataset](#dataset)
-* [Model Details](#model-details)
-* [Evaluation & Metrics](#evaluation--metrics)
-* [Contributing](#contributing)
-* [License](#license)
+**Affiliation:** Data Science and Business Systems, School of Computing, SRM Institute of Science and Technology, Kattankulathur, Chennai, India
+
+---
 
 ## Overview
 
-GreenSort ML automates the waste classification process using machine learning models. It can be integrated into smart bins or recycling systems to detect and sort waste in real-time, minimizing manual intervention and improving recycling efficiency.
+GreenSortML is a machine learning-based framework designed to optimize energy efficiency in GPU-accelerated sorting operations. Unlike traditional static approaches, GreenSortML dynamically selects the most energy-efficient GPU backend—**CUDA** or **OpenACC**—using predictive models based on input size, entropy, GPU temperature, and other runtime metrics.
+
+The framework achieves significant energy savings without compromising runtime performance, making it suitable for energy-conscious computing environments such as green data centers, embedded GPUs, and edge nodes.
+
+---
 
 ## Features
 
-* Classifies waste into multiple categories (Plastic, Paper, Organic, Metal, etc.)
-* Supports real-time predictions
-* High accuracy with optimized ML models
-* Provides detailed evaluation metrics
-* Easy-to-use interface for deployment
+* **Energy-efficient backend selection:** Dynamically chooses CUDA or OpenACC for each sorting task.
+* **Machine learning-driven:** Uses Gradient Boosting Regressors to predict energy consumption.
+* **Real-time execution:** Backend selection latency is under 3 milliseconds.
+* **Comprehensive profiling:** Monitors GPU temperature, bandwidth, and power consumption using NVML.
+* **Supports multiple sorting algorithms:** Bitonic Sort, Radix Sort, Merge Sort.
+
+---
 
 ## Technologies Used
 
-* **Programming Languages:** Python
+* **Languages:** Python, C (for CUDA/OpenACC kernels)
 * **Libraries & Frameworks:**
 
-  * `scikit-learn` – ML model implementation
-  * `TensorFlow` / `PyTorch` – Deep learning (if applicable)
-  * `pandas`, `numpy` – Data processing
-  * `matplotlib`, `seaborn` – Visualization
-* **Others:** OpenCV (for image processing, if using image data)
+  * `scikit-learn` and `xgboost` for ML modeling
+  * `pandas`, `numpy` for data processing
+  * `matplotlib`, `seaborn` for visualization
+  * `pynvml` for real-time GPU monitoring
+* **GPU Frameworks:** CUDA 12.2, OpenACC (NVIDIA HPC SDK 23.7)
+
+---
 
 ## Installation
 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/greensort-ml.git
+git clone https://github.com/yourusername/greensortml.git
 ```
 
-2. Navigate to the project folder:
+2. Navigate to the project directory:
 
 ```bash
-cd greensort-ml
+cd greensortml
 ```
 
-3. Install dependencies:
+3. Install Python dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Usage
-
-1. Load the dataset:
-
-```python
-from data_loader import load_dataset
-data = load_dataset("path_to_dataset")
-```
-
-2. Train the model:
-
-```python
-from model import GreenSortModel
-model = GreenSortModel()
-model.train(data)
-```
-
-3. Make predictions:
-
-```python
-predictions = model.predict(test_data)
-```
-
-4. Evaluate the model:
-
-```python
-from evaluation import evaluate
-evaluate(model, test_data)
-```
+---
 
 ## Dataset
 
-* The dataset consists of \[number] samples across \[number] categories.
-* Includes images and/or textual features of waste items.
-* Preprocessing steps: resizing, normalization, encoding categorical labels.
+* Synthetic dataset of 2,000 input arrays ranging from 1,000 to 1,000,000 elements.
+* Entropy levels from 0.1 to 3.5 using normalized Shannon entropy.
+* Features include: `size`, `entropy`, `sort_type`, `bandwidth`, `GPU temp`, `power_limit`.
+* Target: Energy consumption (Joules) for CUDA and OpenACC backends.
+* Data split: 60% training, 20% validation, 20% test.
 
-## Model Details
+---
 
-* Model Type: \[e.g., Random Forest, CNN, or custom deep learning model]
-* Input Features: \[List key features]
-* Output: Waste category prediction
-* Key techniques: Feature engineering, data augmentation, hyperparameter tuning
+## Model
 
-## Evaluation & Metrics
+* **Model Type:** Gradient Boosting Regressor (GBR)
+* **Input Features:** `size`, `entropy`, `sort_type` (one-hot encoded), `bandwidth`, `temp`
+* **Output:** Predicted energy consumption (Joules)
+* **Transfer Learning:** Pretrained on synthetic data and fine-tuned on real GPU traces.
 
-* Accuracy: XX%
-* Precision, Recall, F1-Score for each class
-* Confusion Matrix visualization
-* ROC Curve (if binary classification)
+### Backend Selection Logic
 
-## Contributing
+```python
+if EnergyOpenACC < EnergyCUDA and (RuntimeCUDA - RuntimeOpenACC)/RuntimeCUDA < 0.1:
+    select OpenACC
+else:
+    select CUDA
+```
 
-Contributions are welcome! Please follow these steps:
+* Ensures energy savings while maintaining runtime performance.
 
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature-name`)
-3. Make your changes and commit (`git commit -m 'Add feature'`)
-4. Push to the branch (`git push origin feature-name`)
-5. Open a Pull Request
+---
+
+## Usage
+
+```python
+from greensortml import generate_dataset, GradientBoostingRegressor, predict_backend
+
+# Generate synthetic dataset
+df = generate_dataset()
+
+# Train model
+model = GradientBoostingRegressor()
+model.fit(X_train, y_train)
+
+# Predict best backend
+backend = predict_backend(size=16384, entropy=0.5, sort_type='bitonic', bandwidth=512, temp=65)
+print("Recommended backend:", backend)
+```
+
+---
+
+## Evaluation Metrics
+
+* **Energy Savings:** 12.1% on average compared to CUDA-only baseline.
+* **Backend Selection Accuracy:** 88.5%.
+* **Prediction Overhead:** \~2.84 ms per selection.
+* **Runtime Impact:** <2.7% deviation from fastest backend.
+* **ROC AUC for backend selection:** 0.921
+
+---
+
+## Visualization
+
+* Scatterplots of energy vs. input size and entropy.
+* Bar plots comparing CUDA, OpenACC, and ML hybrid models.
+* ROC curves for backend selection accuracy.
+
+Example:
+
+```python
+import seaborn as sns
+import matplotlib.pyplot as plt
+sns.scatterplot(data=df, x='size', y='joules', hue='entropy', style='type')
+plt.show()
+```
+
+---
+
+## Conclusion
+
+GreenSortML demonstrates a robust approach to energy-efficient GPU sorting through machine learning-based backend selection. It combines predictive modeling with runtime profiling to save energy without significant runtime overhead, making it ideal for modern energy-conscious computing environments.
+
+---
+
+## References
+
+1. NVIDIA. CUDA Toolkit Documentation, 2024.
+2. OpenACC Programming and Best Practices Guide, 2024.
+3. NVIDIA Management Library (NVML) Developer Guide, 2024.
+4. Paszke et al., PyTorch: An Imperative Style, High-Performance Deep Learning Library, NeurIPS 2019.
+5. Pedregosa et al., Scikit-learn: Machine Learning in Python, JMLR 2011.
+6. Matplotlib & Seaborn Documentation.
+7. Xu, J., Wang, L., et al. An Energy-Aware GPU-Accelerated Sorting Framework, ICCGC 2022.
+
+---
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
+censed under the MIT License. See the [LICENSE](LICENSE) file for details.
 # GreenSort-ML
